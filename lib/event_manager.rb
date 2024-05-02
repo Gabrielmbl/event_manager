@@ -1,6 +1,7 @@
 require 'csv'
 require 'google/apis/civicinfo_v2'
 require 'erb'
+require 'date'
 
 def clean_zipcode(zipcode)
   zipcode.to_s.rjust(5, '0')[0..4]
@@ -28,6 +29,19 @@ def clean_phone_number(phone_number)
 
   end
 end
+
+def format_date_string(date_str)
+    DateTime.strptime(date_str, "%m/%d/%y %H:%M")
+end
+
+def time_targeting(datetimes)
+    grouped_hours = datetimes.group_by { |dt| dt.hour }
+    hour_counts = grouped_hours.transform_values { |datetimes| datetimes.count }
+    sorted_hours = hour_counts.sort_by { |hour, count| -count }.to_h
+
+    sorted_hours
+end
+
 
 def legislators_by_zipcode(zip)
   civic_info = Google::Apis::CivicinfoV2::CivicInfoService.new
@@ -65,16 +79,20 @@ contents = CSV.open(
 template_letter = File.read('form_letter.erb')
 erb_template = ERB.new template_letter
 
+datetimes = []
+
 contents.each do |row|
   id = row[0]
   name = row[:first_name]
   zipcode = clean_zipcode(row[:zipcode])
   legislators = legislators_by_zipcode(zipcode)
-  phone_number = clean_phone_number(row[:homephone])
-
-  puts phone_number
+#   phone_number = clean_phone_number(row[:homephone])
+#   puts phone_number
+  datetimes << format_date_string(row[:regdate])
 
   form_letter = erb_template.result(binding)
 
   #   save_thank_you_letter(id,form_letter)
 end
+
+puts time_targeting(datetimes)
