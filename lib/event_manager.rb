@@ -31,17 +31,20 @@ def clean_phone_number(phone_number)
 end
 
 def format_date_string(date_str)
-    DateTime.strptime(date_str, "%m/%d/%y %H:%M")
+  DateTime.strptime(date_str, '%m/%d/%y %H:%M')
 end
 
 def time_targeting(datetimes)
-    grouped_hours = datetimes.group_by { |dt| dt.hour }
-    hour_counts = grouped_hours.transform_values { |datetimes| datetimes.count }
-    sorted_hours = hour_counts.sort_by { |hour, count| -count }.to_h
-
-    sorted_hours
+  grouped_hours = datetimes.group_by { |dt| dt.hour }
+  hour_counts = grouped_hours.transform_values { |datetimes| datetimes.count }
+  hour_counts.sort_by { |_hour, count| -count }.to_h
 end
 
+def day_of_the_week_targeting(datetimes)
+  grouped_days = datetimes.group_by { |dt| dt.wday }
+  day_counts = grouped_days.transform_values { |datetimes| datetimes.count }
+  day_counts.sort_by { |_day, count| -count }.to_h
+end
 
 def legislators_by_zipcode(zip)
   civic_info = Google::Apis::CivicinfoV2::CivicInfoService.new
@@ -86,8 +89,8 @@ contents.each do |row|
   name = row[:first_name]
   zipcode = clean_zipcode(row[:zipcode])
   legislators = legislators_by_zipcode(zipcode)
-#   phone_number = clean_phone_number(row[:homephone])
-#   puts phone_number
+  #   phone_number = clean_phone_number(row[:homephone])
+  #   puts phone_number
   datetimes << format_date_string(row[:regdate])
 
   form_letter = erb_template.result(binding)
@@ -96,3 +99,4 @@ contents.each do |row|
 end
 
 puts time_targeting(datetimes)
+puts day_of_the_week_targeting(datetimes)
